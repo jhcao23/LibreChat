@@ -139,6 +139,7 @@ const ask = async ({ text, endpointOption, parentMessageId = null, endpoint, con
     };
 
     let oaiApiKey = req.body?.token ?? process.env.OPENAI_API_KEY;
+    console.log('oaiApiKey:', oaiApiKey);
 
     if (process.env.AZURE_API_KEY && endpoint === 'azureOpenAI') {
       clientOptions.azure = JSON.parse(req.body?.token) ?? getAzureCredentials();

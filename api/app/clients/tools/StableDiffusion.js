@@ -10,6 +10,9 @@ class StableDiffusionAPI extends Tool {
     super();
     this.name = 'stable-diffusion';
     this.url = fields.SD_WEBUI_URL || this.getServerURL();
+    this.apiKey = fields.SD_WEBUI_API_KEY || this.getApiKey();
+    this.headers = this.getHeaders(this.apiKey);
+    this.needPngMetadata = fields.SD_WEBUI_NEED_PNG_METADATA || this.needPngMetadata();
     this.description = `You can generate images with 'stable-diffusion'. This tool is exclusively for visual content.
 Guidelines:
 - Visually describe the moods, details, structures, styles, and/or proportions of the image. Remember, the focus is on visual attributes.
@@ -38,19 +41,65 @@ Guidelines:
     return url;
   }
 
-  async _call(input) {
-    const url = this.url;
-    const payload = {
+  getApiKey() {
+    const key = process.env.SD_WEBUI_API_KEY || '';
+    if (!key) {
+      throw new Error('Missing SD_WEBUI_API_KEY environment variable.');
+    }
+    return key;
+  }
+
+  getHeaders(apiKey) {
+    const headers = apiKey ? {
+      'Content-Type': 'application/json',
+      Authorization: 'Bearer ' + apiKey
+    } : {};
+    return headers;
+  }
+
+  needPngMetadata() {
+    const needPngMetadata = process.env.SD_WEBUI_NEED_PNG_METADATA.toLowerCase() === 'true' || true; // default to true
+    if (typeof needPngMetadata !== 'boolean') {
+      throw new Error('Missing SD_WEBUI_NEED_PNG_METADATA boolean environment variable.');
+    }
+    return needPngMetadata;
+  }
+
+  getTxt2ImgUrl(url) {
+    return `${url}/sdapi/v1/txt2img`;
+  }
+
+  getTxt2ImgPayHeaders() {
+    return this.headers;
+  }
+
+  getTxt2ImgPayload(input) {
+    return {
       prompt: input.split('|')[0],
       negative_prompt: input.split('|')[1],
       steps: 20
     };
-    const response = await axios.post(`${url}/sdapi/v1/txt2img`, payload);
-    const image = response.data.images[0];
+  }
 
-    const pngPayload = { image: `data:image/png;base64,${image}` };
-    const response2 = await axios.post(`${url}/sdapi/v1/png-info`, pngPayload);
-    const info = response2.data.info;
+  getPngInfoUrl(url) {
+    return `${url}/sdapi/v1/png-info`;
+  }
+
+  getPngInfoHeaders() {
+    return this.headers;
+  }
+
+  getPngInfoPayload(image) {
+    return { image: `data:image/png;base64,${image}` };
+  }
+
+  async _call(input) {
+    const url = this.url;
+    const response = await axios.post(this.getTxt2ImgUrl(url),
+      this.getTxt2ImgPayload(input),
+      { headers: this.getTxt2ImgPayHeaders() }
+    );
+    const image = response.data.images[0];
 
     // Generate unique name
     const imageName = `${Date.now()}.png`;
@@ -65,13 +114,24 @@ Guidelines:
 
     try {
       const buffer = Buffer.from(image.split(',', 1)[0], 'base64');
-      await sharp(buffer)
-        .withMetadata({
-          iptcpng: {
-            parameters: info
-          }
-        })
-        .toFile(this.outputPath + '/' + imageName);
+      const filepath = this.outputPath + '/' + imageName;
+      if (this.needPngMetadata) {
+        const response2 = await axios.post(this.getPngInfoUrl(url),
+          this.getPngInfoPayload(image),
+          { headers: this.getPngInfoHeaders() }
+        );
+        const info = response2.data.info;
+
+        await sharp(buffer)
+          .withMetadata({
+            iptcpng: {
+              parameters: info
+            }
+          })
+          .toFile(filepath);
+      } else {
+        await sharp(buffer).toFile(filepath);
+      }
       this.result = this.getMarkdownImageUrl(imageName);
     } catch (error) {
       console.error('Error while saving the image:', error);
