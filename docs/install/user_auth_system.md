@@ -25,6 +25,8 @@ Important: When you run the app for the first time, you need to create a new acc
 
 ## **OAuth2/Social Login**
 
+## Before enabling Social Authentication, set ALLOW_SOCIAL_LOGIN=true in the .env file
+
 ## How to Set Up Google Authentication
 
 To enable Google login, you must create an application in the [Google Cloud Console](https://cloud.google.com) and provide the client ID and client secret in the `/.env` file.
@@ -77,9 +79,29 @@ OPENID_CALLBACK_URL=/oauth/openid/callback
 5. Remove the Active checkbox in the Webhook section
 6. Save changes and generate a Client Secret
 7. In the Permissions & events tab select, open the Account Permissions and set Email addresses to Read-only
-8. Put the Client ID and Client Secret in the .env file
+8. Put the Client ID and Client Secret in the .env file:
+```
+GITHUB_CLIENT_ID=your_client_id
+GITHUB_CLIENT_SECRET=your_client_secret
+GITHUB_CALLBACK_URL=/oauth/github/callback # this should be the same for everyone
+```
 9. Save the .env file
+---
 
+## How to Set Up Discord Authentication
+
+1. Go to [Discord Developer Portal](https://discord.com/developers)
+2. Create a new Application and give it a name
+4. In the OAuth2 general settings add a redirect URL and set it as "[Your DOMAIN_CLIENT](https://github.com/danny-avila/LibreChat/blob/main/.env.example#L219)/oauth/discord/callback" (example: http://localhost:3080/oauth/discord/callback)
+5. in the Default Authorization Link set applications.commands
+6. Save changes and reset the Client Secret
+7. Put the Client ID and Client Secret in the .env file:
+```
+DISCORD_CLIENT_ID=your_client_id
+DISCORD_CLIENT_SECRET=your_client_secret
+DISCORD_CALLBACK_URL=/oauth/discord/callback # this should be the same for everyone
+```
+8. Save the .env file
 ---
 ## **Email and Password Reset** 
 

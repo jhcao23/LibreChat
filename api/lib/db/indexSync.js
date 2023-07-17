@@ -6,14 +6,15 @@ let currentTimeout = null;
 
 // eslint-disable-next-line no-unused-vars
 async function indexSync(req, res, next) {
+  const searchEnabled = process.env.SEARCH && process.env.SEARCH.toLowerCase() === 'true';
   try {
-    if (!process.env.MEILI_HOST || !process.env.MEILI_MASTER_KEY || !process.env.SEARCH) {
+    if (!process.env.MEILI_HOST || !process.env.MEILI_MASTER_KEY || !searchEnabled) {
       throw new Error('Meilisearch not configured, search will be disabled.');
     }
 
     const client = new MeiliSearch({
       host: process.env.MEILI_HOST,
-      apiKey: process.env.MEILI_MASTER_KEY
+      apiKey: process.env.MEILI_MASTER_KEY,
     });
 
     const { status } = await client.health();
