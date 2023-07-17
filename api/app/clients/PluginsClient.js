@@ -284,7 +284,10 @@ Only respond with your conversational reply to the following User Message:
       }
 
       try {
+        console.log('input', input);
+        console.log('signal', signal);
         this.result = await this.executor.call({ input, signal });
+        console.log('result:', this.result);
         break; // Exit the loop if the function call is successful
       } catch (err) {
         console.error(err);
@@ -343,6 +346,9 @@ Only respond with your conversational reply to the following User Message:
       onAgentAction,
       onChainEnd,
     } = await this.handleStartMethods(message, opts);
+
+    console.log('saveOptions', saveOptions);
+    console.log('responseMessageId', responseMessageId);
 
     this.currentMessages.push(userMessage);
 
